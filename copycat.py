@@ -1,6 +1,4 @@
-#version 1.0.1 added gpt-3.5-turbo-16k and new pricing model
-#todo windows support
-#tesseract linux support
+
 import pyperclip
 import PySimpleGUI as sg
 from extract import *
@@ -21,8 +19,6 @@ home_dir = os.path.expanduser("~")
 
 bundle_dir = os.path.join(home_dir, "Library", "Application Support", "CopyCat")
 Path(bundle_dir).mkdir(parents=True, exist_ok=True)
-
-
 
 import subprocess
 import platform
@@ -56,7 +52,6 @@ def is_tesseract_installed():
         return result.returncode == 0
     except FileNotFoundError:
         return False
-
 
 def prompt_tesseract_installation():
     if platform.system() == 'Darwin':
@@ -94,7 +89,6 @@ def prompt_tesseract_installation():
 
 if not is_tesseract_installed():
     prompt_tesseract_installation()
-
 
 # Define a function that copies a file specified by 'filename'
 # and saves it to the specified location. The parameter 'binary'
@@ -134,21 +128,17 @@ def copy_files(filename, binary=False):
     # Print a message to indicate that the file has been created.
     print("created", destination_file)
 
-
 logo_path = os.path.join(bundle_dir, "logo.png")
 config_path = os.path.join(bundle_dir, "config.ini")
 memory_path = os.path.join(bundle_dir, "memory.json")
 first_time = os.path.join(bundle_dir, "first_time.txt")
-
 
 if not os.path.exists(config_path):  # If the config file doesn't exist
     copy_files("config.ini")
 if not os.path.exists(logo_path):  # If the logo doesn't exist
     copy_files("logo.png", binary=True)
 
-
 create_splash_screen()
-
 
 def if_first_time():
     if not os.path.exists(first_time):
@@ -158,15 +148,12 @@ def if_first_time():
     else:
         return False
 
-
 def make_memory_file(filepath=memory_path):
     with open(filepath, "w") as f:
         json.dump({}, f, indent=4)
 
-
 if not os.path.exists(memory_path):
     make_memory_file()
-
 
 def load_config(filepath):
     """
@@ -176,7 +163,6 @@ def load_config(filepath):
     config = configparser.ConfigParser(strict=False, interpolation=None)
     config.read(filepath)
     return config
-
 
 def save_config(filepath, config_dict):
     """
@@ -189,13 +175,11 @@ def save_config(filepath, config_dict):
     with open(filepath, "w") as config_file:
         config.write(config_file)
 
-
 def is_api_key_empty(api_key):
     if len(api_key.strip()) == 0:
         return True
     else:
         return False
-
 
 def is_notion_token_empty(token, space_id):
     print("is_notion_token_empty")
@@ -205,12 +189,11 @@ def is_notion_token_empty(token, space_id):
     else:
         return False
 
-
 CONFIG = load_config(config_path)
-
 
 def settings_window():
     global CONFIG
+    global max_range
 
     max_tokens = CONFIG.get("OpenAI", "max_tokens")
     if max_tokens == "0":
@@ -283,7 +266,6 @@ def settings_window():
 
     return
 
-
 PROMPT = False
 SKIP = False
 DEBUG = True
@@ -312,7 +294,6 @@ if if_first_time():
         "https://313372600.notion.site/CopyCat-AI-Instructions-f94df67d0f3e47c89bd93810e38fb272"
     )
     settings_window()
-
 
 def prompt_user(clip, img=False):
     global CONFIG
@@ -580,7 +561,7 @@ def prompt_user(clip, img=False):
                     max_tokens = int(max_tokens)
                 openai.api_key = CONFIG.get("OpenAI", "api_key")
                 window["temperature"].update(temperature)
-                window["max_tokens"].update(max_tokens)
+                window["total_tokens"].update(max_tokens)
                 window.refresh()
                 # api_key = CONFIG.get("OpenAI", "api_key")
                 # openai.api_key = api_key
@@ -777,7 +758,6 @@ def prompt_user(clip, img=False):
             window.close()
             return
 
-
 def code_mode(reply):  # This function is used to format the reply in code mode
     if "```" not in reply:  # This if statement is used to format the reply in code mode
         return reply
@@ -800,7 +780,6 @@ def code_mode(reply):  # This function is used to format the reply in code mode
                 line
             )  # This if statement is used to format the reply in code mode
     return "\n".join(new_reply)
-
 
 def submit(
     input_text, clip, img, mem_on_off, topic, codemode, memory_path, config_path, window
