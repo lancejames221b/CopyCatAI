@@ -4,13 +4,21 @@ import requests
 from PIL import Image
 from base64 import b64decode
 from PIL import ImageGrab, Image
-import magic
 from bs4 import BeautifulSoup
 import pytesseract
 
-tesseract_path = os.path.join("/opt/homebrew/bin/", "tesseract")
-pytesseract.pytesseract.tesseract_cmd = tesseract_path
 
+tesseract_path_mac = os.path.join("/opt/homebrew/bin/", "tesseract")
+tesseract_path_windows = os.path.join("C:/Program Files/Tesseract-OCR/tesseract.exe")
+tesseract_path_linux = os.path.join("/usr/bin/tesseract")
+
+# Set the tesseract command path based on the current operating system
+if sys.platform == 'darwin':
+    pytesseract.pytesseract.tesseract_cmd = tesseract_path_mac
+elif sys.platform == 'win32':
+    pytesseract.pytesseract.tesseract_cmd = tesseract_path_windows
+elif sys.platform.startswith('linux'):
+    pytesseract.pytesseract.tesseract_cmd = tesseract_path_linux
 
 def get_image_from_clipboard():
     if os.path.exists("/tmp/copycat.jpg"):
@@ -153,7 +161,7 @@ def get_page_from_text(user, text, nospace=False):
             print("Downloading page...", file_path)
             if page.headers[
                 "Content-Type"
-            ] == "text/html" or "HTML document" in magic.from_buffer(page.content):
+            ] == "text/html" or page.headers["Content-Type"] == "text/html; charset=utf-8":
                 print("HTML document")
                 file.write(parse_html_to_text(page.content).encode())
 
