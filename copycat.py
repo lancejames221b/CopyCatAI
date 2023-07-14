@@ -1,3 +1,6 @@
+#version 1.0.1 added gpt-3.5-turbo-16k and new pricing model
+#todo windows support
+#tesseract linux support
 import pyperclip
 
 # import PySimpleGUI as sg
@@ -176,7 +179,7 @@ def settings_window():
         max_tokens = int(max_tokens)
 
     model = CONFIG.get("OpenAI", "model")
-    max_range = 32768 if model == "gpt-4-32k" else 8192 if model == "gpt-4" else 4096
+    max_range = 32768 if model == "gpt-4-32k" else 8192 if model == "gpt-4" else 4096 if model == "gpt-3.5-turbo" else 16384 
 
     layout = [
         [
@@ -206,7 +209,7 @@ def settings_window():
         ],
         [
             sg.Text(
-                f"Max Tokens (default None. 32768 max for GPT-4-32k, 8192 max for GPT-4, and 4096 max for GPT-3.5-turbo):"
+                f"Max Tokens (default None. 32k max for GPT-4-32k, 8k max for GPT-4, 4k max for GPT-3.5-turbo and 16k for GPT_3.5-turbo-16k):"
             ),
             sg.Slider(
                 range=(0, max_range),
@@ -356,7 +359,7 @@ def prompt_user(clip, img=False):
                 ),
                 sg.Text("Select Model:", tooltip="Select Model"),
                 sg.Combo(
-                    ["gpt-4-32k", "gpt-4", "gpt-3.5-turbo", "NotionAI"],
+                    ["gpt-4-32k", "gpt-4", "gpt-3.5-turbo-16k", "gpt-3.5-turbo", "NotionAI"],
                     default_value=model,
                     readonly=True,
                     key="-MODEL-",

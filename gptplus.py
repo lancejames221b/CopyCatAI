@@ -174,6 +174,10 @@ def truncate_messages(messages, model_name, system_prompt=None, max_tokens=None)
         if not max_tokens:
             max_tokens = 4096
         encodingmodel = model_name
+    elif model_name == "gpt-3.5-turbo-16k":
+        if not max_tokens:
+            max_tokens = 16384
+        encodingmodel = model_name
     elif model_name == "gpt-4-32k":
         if not max_tokens:
             max_tokens = 32768
@@ -268,28 +272,21 @@ def truncate_messages(messages, model_name, system_prompt=None, max_tokens=None)
 
 
 def calculate_cost(prompt_tokens, completion_tokens, total_tokens, model=None):
-    """
-    model       Completion,  Prompt     Max_Tokens,
-    gpt-4-0314	$0.06/1K	$0.03/1K	8192	40000	200	$1200.00
-    gpt-3.5-turb	$0.002/1K	$0.002/1K	4096	40000	200	$4.00"""
-
-    if model == "gpt-3.5-turbo":
-        tokens = total_tokens
-        price_per_token = 0.002 / 1000  # $0.002 per 1K tokens
-        total_price = tokens * price_per_token
-        return total_price
-    elif model == "gpt-4" or model == "gpt-4-32k":
-        system_prompt_price_per_token = (
-            0.03 / 1000
-        )  # $0.03 per 1K tokens for system prompt
-        response_price_per_token = 0.06 / 1000  # $0.06 per 1K tokens for response
-        tokens = total_tokens
+    
+    price_per_token = {
+        "gpt-3.5-turbo": (0.0015 / 1000, 0.002 / 1000),
+        "gpt-4": (0.03 / 1000, 0.06 / 1000),
+        "gpt-4-32k": (0.06 / 1000, 0.12 / 1000),
+        "gpt-3.5-turbo-16k": (0.003 / 1000, 0.004 / 1000)
+    }
+    
+    if model in price_per_token:
+        system_prompt_price_per_token, response_price_per_token = price_per_token[model]
         total_price = (
             prompt_tokens * system_prompt_price_per_token
             + completion_tokens * response_price_per_token
         )
         return total_price
-
     else:
         return 0
 
