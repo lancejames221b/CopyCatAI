@@ -876,9 +876,11 @@ def submit(
     if reply["response"].strip():  # If the reply is not empty
         if window["-PREVIEW-ML-"].visible:
             window["-PREVIEW-ML-"].update(reply["response"])
+        pyperclip.determine_clipboard()  # Determine the clipboard
         pyperclip.copy(reply["response"])  # Copy the reply to the clipboard
 
         if not pyperclip.paste():  # If the clipboard is empty
+            pyperclip.determine_clipboard()
             pyperclip.copy(reply["response"])  #
         display_notification(  # Display a notification
             "Copied to Clipboard!",  # Title
@@ -903,6 +905,7 @@ def submit(
             keep_on_top=True,  # Keep on top
         )
         if not pyperclip.paste():  # If the clipboard is empty
+            pyperclip.determine_clipboard()
             pyperclip.copy("")  # Copy the input text to the clipboard
         return  # Return the input text
 
@@ -910,6 +913,7 @@ def submit(
 def main(PROMPT, SKIP, prompt_user):
     while True:
         try:
+            pyperclip.determine_clipboard()
             clip = pyperclip.waitForNewPaste()
             if clip == "" or clip == None and not PROMPT and not SKIP:  # IMAGE CHECK
                 image = ImageGrab.grabclipboard()
@@ -923,6 +927,7 @@ def main(PROMPT, SKIP, prompt_user):
                 PROMPT = False
                 SKIP = False
             elif SKIP:
+                pyperclip.determine_clipboard()
                 pyperclip.copy(clip.strip())
                 SKIP = False
                 PROMPT = False
