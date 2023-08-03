@@ -1,27 +1,26 @@
 
 import pyperclip
 import PySimpleGUI as sg
-from extract import *
-from notification import *
 import os
 from PIL import ImageGrab, Image
-from gptplus import *
-from prompt_ui import *
-from splash import *
+from pathlib import Path
 import subprocess
 import platform
 import traceback
 import configparser
 import webbrowser
-from pathlib import Path
+import json
+import openai
+
+from extract import *
+from notification import *
+from gptplus import *
+from prompt_ui import *
+from splash import *
 
 home_dir = os.path.expanduser("~")
-
 bundle_dir = os.path.join(home_dir, "Library", "Application Support", "CopyCat")
 Path(bundle_dir).mkdir(parents=True, exist_ok=True)
-
-import subprocess
-import platform
 
 def is_tesseract_installed():
     try:
@@ -55,34 +54,34 @@ def is_tesseract_installed():
 
 def prompt_tesseract_installation():
     if platform.system() == 'Darwin':
-        message = (
-            "In order for the screenshot image to text feature to work, Tesseract must be installed.\n\n"
-            "Tesseract is not installed on your system. Please install it using the following command:\n\n"
-            "Open a terminal (command-spacebar then type 'terminal')\n\n"
-            "brew install tesseract\n\n"
-            "For more detailed installation instructions, visit:\n"
-            "https://formulae.brew.sh/formula/tesseract"
-        )
+        message = """
+            In order for the screenshot image to text feature to work, Tesseract must be installed.\n\n"
+            Tesseract is not installed on your system. Please install it using the following command:\n\n"
+            Open a terminal (command-spacebar then type 'terminal')\n\n"
+            brew install tesseract\n\n"
+            For more detailed installation instructions, visit:\n"
+            https://formulae.brew.sh/formula/tesseract
+        """
     elif platform.system() == 'Linux':
-        message = (
-            "In order for the screenshot image to text feature to work, Tesseract must be installed.\n\n"
-            "Tesseract is not installed on your system. Please install it using the following command:\n\n"
-            "Open a terminal and run the following command:\n\n"
-            "sudo apt-get install tesseract-ocr\n\n"
-            "For more detailed installation instructions, visit:\n"
-            "https://github.com/tesseract-ocr/tesseract/wiki"
-        )
+        message = """
+            In order for the screenshot image to text feature to work, Tesseract must be installed.\n\n"
+            Tesseract is not installed on your system. Please install it using the following command:\n\n"
+            Open a terminal and run the following command:\n\n"
+            sudo apt-get install tesseract-ocr\n\n"
+            For more detailed installation instructions, visit:\n"
+            https://github.com/tesseract-ocr/tesseract/wiki
+        """
     elif platform.system() == 'Windows':
-        message = (
-            "In order for the screenshot image to text feature to work, Tesseract must be installed.\n\n"
-            "Tesseract is not installed on your system. Please install it by following these steps:\n\n"
-            "1. Download the Tesseract installer from the following link:\n"
-            "https://github.com/UB-Mannheim/tesseract/wiki\n\n"
-            "2. Run the installer and follow the installation instructions.\n\n"
-            "3. After installation, add the Tesseract installation directory to the system's PATH environment variable.\n\n"
-            "For more detailed installation instructions, visit:\n"
-            "https://github.com/UB-Mannheim/tesseract/wiki/Installation"
-        )
+        message = """
+            In order for the screenshot image to text feature to work, Tesseract must be installed.\n\n"
+            Tesseract is not installed on your system. Please install it by following these steps:\n\n"
+            1. Download the Tesseract installer from the following link:\n"
+            https://github.com/UB-Mannheim/tesseract/wiki\n\n"
+            2. Run the installer and follow the installation instructions.\n\n"
+            3. After installation, add the Tesseract installation directory to the system's PATH environment variable.\n\n"
+            For more detailed installation instructions, visit:\n"
+            https://github.com/UB-Mannheim/tesseract/wiki/Installation
+        """
     else:
         return
     sg.popup(message, title="Screenshot Feature")
@@ -90,42 +89,25 @@ def prompt_tesseract_installation():
 if not is_tesseract_installed():
     prompt_tesseract_installation()
 
-# Define a function that copies a file specified by 'filename'
-# and saves it to the specified location. The parameter 'binary'
-# is optional with a default value of False.
 def copy_files(filename, binary=False):
-    # Check if the script is running in a PyInstaller bundle.
     if getattr(sys, "frozen", False):
-        # PyInstaller creates a temp folder and stores the path in _MEIPASS
-        # Set the app_config_dir to the path stored in _MEIPASS.
         app_config_dir = sys._MEIPASS
     else:
-        # Set the app_config_dir to the directory of the current script.
         app_config_dir = os.path.dirname(os.path.abspath(__file__))
 
-    # Create the path to the bundled file by joining the app_config_dir and 'filename'.
     bundled_config_file = os.path.join(app_config_dir, filename)
-
-    # Create the path to the destination file by joining 'filename' to an undefined variable, bundle_dir.
-    # This looks like an error in the code.
     destination_file = os.path.join(bundle_dir, filename)
 
-    # If 'binary' is False, open the bundled file as a text file and write the contents to the destination file as a text file.
     if not binary:
         temp_config = open(bundled_config_file, "r").read()
         with open(destination_file, "w") as f:
             f.write(temp_config)
-
-    # If 'binary' is True, open the bundled file as a binary file and write the contents to the destination file as a binary file.
     else:
         temp_config = open(bundled_config_file, "rb").read()
         with open(destination_file, "wb") as f:
             f.write(temp_config)
 
-    # Set the file permission of the destination file to read and write permission for the owner of the file.
     os.chmod(destination_file, 0o600)
-
-    # Print a message to indicate that the file has been created.
     print("created", destination_file)
 
 logo_path = os.path.join(bundle_dir, "logo.png")
@@ -156,19 +138,11 @@ if not os.path.exists(memory_path):
     make_memory_file()
 
 def load_config(filepath):
-    """
-    Loads the configuration file from the specified filepath and returns a dictionary of the configuration options.
-    """
-
     config = configparser.ConfigParser(strict=False, interpolation=None)
     config.read(filepath)
     return config
 
 def save_config(filepath, config_dict):
-    """
-    Saves the specified dictionary of configuration options to the specified filepath.
-    """
-
     config = configparser.ConfigParser(strict=False, interpolation=None)
     for section, options in config_dict.items():
         config[section] = options
@@ -176,24 +150,17 @@ def save_config(filepath, config_dict):
         config.write(config_file)
 
 def is_api_key_empty(api_key):
-    if len(api_key.strip()) == 0:
-        return True
-    else:
-        return False
+    return len(api_key.strip()) == 0
 
 def is_notion_token_empty(token, space_id):
     print("is_notion_token_empty")
     print(token, space_id)
-    if len(token.strip()) == 0 or len(space_id.strip()) == 0:
-        return True
-    else:
-        return False
+    return len(token.strip()) == 0 or len(space_id.strip()) == 0
 
 CONFIG = load_config(config_path)
 
 def settings_window():
     global CONFIG
-    global max_range
 
     max_tokens = CONFIG.get("OpenAI", "max_tokens")
     if max_tokens == "0":
@@ -522,8 +489,8 @@ def prompt_user(clip, img=False):
         if DEBUG:
             print("Prompt Loaded", window)
 
-        window["lrcosts"].update(str(float(costs[:6])))
-        window["total"].update(str(float(total_costs[:6])))
+        window["lrcosts"].update(str(float(costs)))
+        window["total"].update(str(float(total_costs)))
         window["total_tokens"].update(str(total_tokens))
 
         while True:

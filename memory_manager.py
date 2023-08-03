@@ -17,6 +17,9 @@ def truncate_memory(memory, max_tokens, actual_tokens, model_name):
     elif model_name == "gpt-3.5-turbo":
         max_tokens = 4096
         tokenizer = Tokenizer()
+    elif model_name == "gpt-3.5-turbo-16k":
+        max_tokens = 16384
+        tokenizer = Tokenizer()
     elif model_name == "gpt-4-32k":
         max_tokens = 32768
         tokenizer = TokenizerV2()
