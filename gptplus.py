@@ -9,7 +9,11 @@ import requests
 from notification import *
 import tiktoken
 from requests.exceptions import RequestException, Timeout
+import uuid
 
+
+def guid_generator():
+    return str(uuid.uuid4())
 
 # Silence the warning
 from urllib3.exceptions import InsecureRequestWarning
@@ -75,7 +79,7 @@ def notion_ai_chat(
     # Create the JSON data to be sent with the request.
 
     json_data = {
-        "id": "bleh",
+        "id": guid_generator(),
         "context": {
             "type": "helpMeEdit",
             "pageTitle": system_prompt,
@@ -83,9 +87,13 @@ def notion_ai_chat(
             "selectedText": content,
             "prompt": prompt,
         },
-        "model": "openai-3",
-        "spaceId": space_id,
-        "isSpacePermission": False,
+        'model': 'openai-4',
+        'spaceId': '94a50b33-08d8-4280-9145-f72a9276df0f',
+        'isSpacePermission': False,
+        'aiSessionId': guid_generator(),
+        'metadata': {
+            'blockId': guid_generator(),
+        },
     }
 
     # Make the request and store the response
