@@ -5,7 +5,7 @@ from openai import APIError
 import configparser
 import re
 import ndjson  # Library used for working with newline-delimited JSON
-import requests
+import requests 
 from notification import *
 import tiktoken
 from requests.exceptions import RequestException, Timeout
