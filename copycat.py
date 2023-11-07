@@ -32,6 +32,13 @@ if not os.path.exists(models_path):
     shutil.copy(source_file, models_path)
 
 
+def reset_costs(config_path):
+    global CONFIG
+    CONFIG = load_config(config_path)
+    CONFIG.set("OpenAI", "total_costs", str(0))  # Reset total costs to 0
+    save_config(config_path, CONFIG)
+
+
 def copy_files(filename, binary=False):
     if getattr(sys, "frozen", False):
         app_config_dir = sys._MEIPASS
@@ -198,8 +205,8 @@ def settings_window():
 
 PROMPT = False
 SKIP = False
-DEBUG = True
-TEST = True
+DEBUG = False
+TEST = False
 window_location = (None, None)
 include_urls = CONFIG.getboolean("GUI", "include_urls")
 mem_on_off = CONFIG.getboolean("GUI", "mem_on_off")
@@ -404,6 +411,12 @@ def prompt_user(clip, img=False):
                     tooltip="Clears the memory and starts fresh",
                     enable_events=True,
                 ),
+                sg.Button(
+                    "Reset Costs",
+                    key="Reset Costs",
+                    tooltip="Resets the total request costs back to 0",
+                    enable_events=True,
+                ),
             ],
             [
                 sg.Text(
@@ -464,9 +477,10 @@ def prompt_user(clip, img=False):
         window["total_tokens"].update(str(total_tokens))
 
         while True:
-            if DEBUG:
-                print("Got here!")
             event, values = window.read()
+            if event in (sg.WIN_CLOSED, 'Cancel', '-ESCAPE-'):
+                break  # Ensure that all conditions leading to a window closure are handled
+
             TOPIC = values["-COMBO-"]
             window_location = window.current_location()
             if event == sg.TIMEOUT_KEY:
@@ -649,6 +663,18 @@ def prompt_user(clip, img=False):
                 if DEBUG:
                     print("Closing window")
                 break
+
+            elif event == "Reset Costs":
+                reset_costs(config_path)
+                window["total"].update(str(0))  # Update the total costs display to 0
+                display_notification(
+                    "Total Costs Reset",
+                    "The total request costs have been reset to 0.",
+                    img_success,  # Assuming img_success is a valid image reference for successful operation
+                    5000,
+                    use_fade_in=False,
+                    location=(0, 0),
+                )
 
         try:
             if window["-PREVIEW-ML-"].visible:
