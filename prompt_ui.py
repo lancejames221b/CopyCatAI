@@ -19,7 +19,9 @@ class PromptManager:
             json.dump(self.prompts, f, indent=4)
 
     # Graphical interface to manage prompts
-    def prompt_manager(self):
+    def prompt_manager(self, main_window=None):
+        if main_window:
+            main_window.Hide()
         # Create layout for the window
         layout = [
             [sg.Text("Select a prompt to manage:", font=("Helvetica", 14))],
@@ -46,7 +48,8 @@ class PromptManager:
         ]
 
         # Create the window
-        window = sg.Window("Prompt Manager", layout, size=(400, 320))
+        window = sg.Window("Prompt Manager", layout, size=(400, 320), finalize=True)
+        window.bring_to_front()
 
         # Event loop
         while True:
@@ -134,3 +137,6 @@ class PromptManager:
 
         # Close the window
         window.close()
+        if main_window:
+            main_window.UnHide()
+            main_window.bring_to_front()

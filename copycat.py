@@ -119,11 +119,11 @@ def is_notion_token_empty(token, space_id):
 CONFIG = load_config(config_path)
 
 
-def settings_window():
+def settings_window(main_window=None):
     global CONFIG
     with open(models_path, "r") as f:
         models = json.load(f)
-    model_info = ", ".join(
+    model_info = "\n".join(
         [f"{model}: {info['token_size']} max tokens" for model, info in models.items()]
     )
 
@@ -140,22 +140,10 @@ def settings_window():
     else:
         raise ValueError(f"Invalid model name: {model}")
 
-    # Rest of the function remains the same...
-
     layout = [
         [
             sg.Text("OpenAI API Key:"),
             sg.InputText(default_text=CONFIG.get("OpenAI", "api_key"), key="api_key"),
-        ],
-        [
-            sg.Text("NotionAI Token:"),
-            sg.InputText(default_text=CONFIG.get("NotionAI", "token_v2"), key="token"),
-        ],
-        [
-            sg.Text("NotionAI SpaceID:"),
-            sg.InputText(
-                default_text=CONFIG.get("NotionAI", "space_id"), key="spaceid"
-            ),
         ],
         [
             sg.Text("OpenAI Temperature (default 0.8):"),
@@ -170,27 +158,25 @@ def settings_window():
         ],
         [
             sg.Text(f"Max Tokens (default None. {model_info}):"),
-            sg.Slider(
-                range=(0, max([info["token_size"] for info in models.values()])),
-                default_value=max_tokens,
-                resolution=1,
-                orientation="h",
-                size=(20, 15),
+            sg.Spin(
+                values=[i for i in range(0, 128001)],
+                initial_value=max_tokens,
+                size=(6, 1),
                 key="max_tokens",
             ),
         ],
         [sg.Button("Save"), sg.Button("Cancel")],
     ]
-
-    swindow = sg.Window("Settings", layout)
+    if main_window:
+        main_window.Hide()
+    swindow = sg.Window("Settings", layout, finalize=True)
+    swindow.bring_to_front()
     while True:
         event, values = swindow.read()
 
         if event == "Save":
             CONFIG.set("OpenAI", "api_key", str(values["api_key"]))
             CONFIG.set("OpenAI", "temperature", str(values["temperature"]))
-            CONFIG.set("NotionAI", "token_v2", str(values["token"]))
-            CONFIG.set("NotionAI", "space_id", str(values["spaceid"]))
             save_config(config_path, CONFIG)
 
             sg.popup("Settings saved!", keep_on_top=True)
@@ -200,6 +186,9 @@ def settings_window():
             swindow.close()
             break
 
+    if main_window:
+        main_window.UnHide()
+        main_window.bring_to_front()
     return
 
 
@@ -478,7 +467,7 @@ def prompt_user(clip, img=False):
 
         while True:
             event, values = window.read()
-            if event in (sg.WIN_CLOSED, 'Cancel', '-ESCAPE-'):
+            if event in (sg.WIN_CLOSED, "Cancel", "-ESCAPE-"):
                 break  # Ensure that all conditions leading to a window closure are handled
 
             TOPIC = values["-COMBO-"]
@@ -491,7 +480,7 @@ def prompt_user(clip, img=False):
 
             elif event == "Prompt Manager":
                 prompt_manager = PromptManager(memory_path)
-                prompt_manager.prompt_manager()
+                prompt_manager.prompt_manager(main_window=window)
                 openai_memory.load_memory()
                 window["-COMBO-"].update(openai_memory.get_memory_keys())
                 window.refresh()
@@ -503,7 +492,7 @@ def prompt_user(clip, img=False):
                 )
 
             elif event == "Preferences":
-                settings_window()
+                settings_window(main_window=window)
                 temperature = CONFIG.get("OpenAI", "temperature")
                 max_tokens = CONFIG.get("OpenAI", "max_tokens")
                 if max_tokens == "0":
@@ -520,9 +509,7 @@ def prompt_user(clip, img=False):
                 # max_tokens = CONFIG.get("OpenAI", "max_tokens")
 
             elif event == "Help":
-                webbrowser.open(
-                    "https://313372600.notion.site/313372600/CopyCat-AI-Instructions-f94df67d0f3e47c89bd93810e38fb272"
-                )
+                webbrowser.open("https://github.com/lancejames221b/CopyCatAI")
 
             if event == "Clear Memory":
                 if DEBUG:
