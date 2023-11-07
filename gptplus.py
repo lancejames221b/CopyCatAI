@@ -193,6 +193,16 @@ class OpenAIMemory:
             raise Exception(error)
 
         ai_response = response["choices"][0]["message"]["content"].strip()
+        # Update the token counts here
+        self.prompt_tokens += response["usage"][
+            "prompt_tokens"
+        ]  # Update with actual prompt token count
+        self.completion_tokens += response["usage"][
+            "completion_tokens"
+        ]  # Update with actual completion token count
+        self.total_tokens += (
+            self.prompt_tokens + self.completion_tokens
+        )  # Update total tokens
 
         if use_memory:
             self.add_to_memory(system_prompt, prompt)
