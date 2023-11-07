@@ -3,8 +3,6 @@ import PySimpleGUI as sg
 import os
 from PIL import ImageGrab, Image
 from pathlib import Path
-import subprocess
-import platform
 import traceback
 import configparser
 import webbrowser
@@ -16,81 +14,22 @@ from notification import *
 from gptplus import *
 from prompt_ui import *
 from splash import *
+import os
+import shutil
+from pathlib import Path
 
 home_dir = os.path.expanduser("~")
 bundle_dir = os.path.join(home_dir, "Library", "Application Support", "CopyCat")
 Path(bundle_dir).mkdir(parents=True, exist_ok=True)
 models_path = os.path.join(bundle_dir, "models.json")
 
+# Define the source file
+source_file = "./models.json"
 
-def is_tesseract_installed():
-    try:
-        if platform.system() == "Darwin":
-            result = subprocess.run(
-                ["/opt/homebrew/bin/tesseract", "-v"],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-            )
-        elif platform.system() == "Linux":
-            result = subprocess.run(
-                ["tesseract", "-v"],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-            )
-        elif platform.system() == "Windows":
-            result = subprocess.run(
-                ["tesseract", "-v"],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                shell=True,  # Added for Windows compatibility
-            )
-        else:
-            return False
-        return result.returncode == 0
-    except FileNotFoundError:
-        return False
-
-
-def prompt_tesseract_installation():
-    if platform.system() == "Darwin":
-        message = """
-            In order for the screenshot image to text feature to work, Tesseract must be installed.\n\n"
-            Tesseract is not installed on your system. Please install it using the following command:\n\n"
-            Open a terminal (command-spacebar then type 'terminal')\n\n"
-            brew install tesseract\n\n"
-            For more detailed installation instructions, visit:\n"
-            https://formulae.brew.sh/formula/tesseract
-        """
-    elif platform.system() == "Linux":
-        message = """
-            In order for the screenshot image to text feature to work, Tesseract must be installed.\n\n"
-            Tesseract is not installed on your system. Please install it using the following command:\n\n"
-            Open a terminal and run the following command:\n\n"
-            sudo apt-get install tesseract-ocr\n\n"
-            For more detailed installation instructions, visit:\n"
-            https://github.com/tesseract-ocr/tesseract/wiki
-        """
-    elif platform.system() == "Windows":
-        message = """
-            In order for the screenshot image to text feature to work, Tesseract must be installed.\n\n"
-            Tesseract is not installed on your system. Please install it by following these steps:\n\n"
-            1. Download the Tesseract installer from the following link:\n"
-            https://github.com/UB-Mannheim/tesseract/wiki\n\n"
-            2. Run the installer and follow the installation instructions.\n\n"
-            3. After installation, add the Tesseract installation directory to the system's PATH environment variable.\n\n"
-            For more detailed installation instructions, visit:\n"
-            https://github.com/UB-Mannheim/tesseract/wiki/Installation
-        """
-    else:
-        return
-    sg.popup(message, title="Screenshot Feature")
-
-
-if not is_tesseract_installed():
-    prompt_tesseract_installation()
+# Check if the file exists at the destination
+if not os.path.exists(models_path):
+    # Copy the file
+    shutil.copy(source_file, models_path)
 
 
 def copy_files(filename, binary=False):
@@ -376,7 +315,6 @@ def prompt_user(clip, img=False):
                     bind_return_key=True,
                     key="-ESCAPE-",
                 ),
-                sg.Text("Select Model:", tooltip="Select Model"),
                 sg.Text("Select Model:", tooltip="Select Model"),
                 sg.Combo(
                     model_names,

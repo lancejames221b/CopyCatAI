@@ -5,20 +5,7 @@ from PIL import Image
 from base64 import b64decode, b64encode
 from PIL import ImageGrab, Image
 from bs4 import BeautifulSoup
-import pytesseract
 import openai
-
-tesseract_path_mac = os.path.join("/opt/homebrew/bin/", "tesseract")
-tesseract_path_windows = os.path.join("C:/Program Files/Tesseract-OCR/tesseract.exe")
-tesseract_path_linux = os.path.join("/usr/bin/tesseract")
-
-# Set the tesseract command path based on the current operating system
-if sys.platform == "darwin":
-    pytesseract.pytesseract.tesseract_cmd = tesseract_path_mac
-elif sys.platform == "win32":
-    pytesseract.pytesseract.tesseract_cmd = tesseract_path_windows
-elif sys.platform.startswith("linux"):
-    pytesseract.pytesseract.tesseract_cmd = tesseract_path_linux
 
 
 def image_to_base64(image_path):
@@ -222,7 +209,8 @@ def get_page_from_text(user, text, nospace=False):
         print("Successfully downloaded page!")
         # Return the page text
         if not HTML:
-            text = basic_text_extractor(file_path)
+            base64_image = image_to_base64(file_path)
+            text = caption_image(base64_image)
         if HTML:
             text = open(file_path, "rb").read().decode()
         os.remove(file_path)
@@ -233,30 +221,6 @@ def get_page_from_text(user, text, nospace=False):
         except Exception:
             pass
         return "".strip()
-
-
-def basic_text_extractor(file_path):
-    """
-    Extracts text from the file.
-    Args:
-        file_path (str): Path to the file.
-    Returns:
-        str: Extracted text from the file.
-    Raises:
-        ValueError: If the file format is not supported.
-    """
-    # Check if the file format is supported
-
-    # Reads the file content
-    # CMD = "/opt/homebrew/bin/tesseract " + file_path + " /tmp/out"
-    # subprocess.Popen(CMD, shell=True).wait()
-    text = pytesseract.image_to_string(Image.open(file_path))
-
-    # Converts the file content to string format
-    # text = open("/tmp/out.txt", "r").read()
-
-    # Returns the text extracted from the file
-    return text
 
 
 # Define the Bearer token

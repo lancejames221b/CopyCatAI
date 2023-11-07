@@ -1,11 +1,9 @@
 import openai
 import json
-import os, sys
+import os, json
 from openai import APIError
 import configparser
 import re
-import ndjson  # Library used for working with newline-delimited JSON
-import requests
 from notification import *
 import tiktoken
 from requests.exceptions import RequestException, Timeout
@@ -16,105 +14,25 @@ def guid_generator():
     return str(uuid.uuid4())
 
 
-# Silence the warning
-from urllib3.exceptions import InsecureRequestWarning
-import datetime
-
 TIMEOUT_SECONDS = 60
 
 home_dir = os.path.expanduser("~")
 bundle_dir = os.path.join(home_dir, "Library", "Application Support", "CopyCat")
 models_path = os.path.join(bundle_dir, "models.json")
-# Silence the warning
-requests.packages.urllib3.disable_warnings(
-    InsecureRequestWarning
-)  # Disable any warnings from being displayed
-
-headers = {
-    "authority": "www.notion.so",
-    "accept": "application/x-ndjson",
-    "accept-language": "en-US,en;q=0.9",
-    # Already added when you pass json=
-    # 'content-type': 'application/json',
-    # Requests sorts cookies= alphabetically
-    # 'cookie': '_gcl_au=1.1.936627812.1671553185; _ga=GA1.1.1943019415.1671553185; _mkto_trk=id:414-XMY-838&token:_mch-www.notion.so-1671553184608-63584; cb_user_id=null; cb_group_id=null; cb_anonymous_id=%223e0e7cb4-91b4-40e1-8f1c-9ae5b513c4fb%22; intercom-id-gpfdrxfd=65ec7069-4608-4086-915a-b7a2337e47a3; intercom-device-id-gpfdrxfd=3c4113c4-8d01-47a8-b323-db2066e73cb1; g_state={"i_l":0}; mutiny.defaultOptOut=true; mutiny.optOut=; mutiny.optIn=true; _tt_enable_cookie=1; _ttp=w9cSlr67NlPr8OR0yG-3BGnYqpv; notion_browser_id=10778b68-066e-4a3e-be20-699c69671a77; notion_experiment_device_id=c1e8a8bc-d854-48f4-bce7-3286a4a60456; ajs_anonymous_id=10778b68066e4a3ebe20699c69671a77; NEXT_LOCALE=en-US; notion_check_cookie_consent=false; notion_locale=en-US/legacy; mutiny.user.session_number=1; csrf=00e58ba6-1c44-49d1-92db-c36dad1d4d6e; _ga_9ZJ8CB186L=GS1.1.1677173748.9.1.1677174283.60.0.0; tatari-cookie-test=19474945; tatari-session-cookie=c9c1906c-fe9c-167b-77f0-3c22986b9b70; token_v2=v02%3Auser_token_or_cookies%3ALY2GcFRvY1SXpNLShF27gtcdqbpMV_jWg96PcIVfvqPXyhn3WDBZa7vG_pFaCOz38AbuAMJDbzFShoQAIaffbZ9FEj9ATx7uN0OgIMd4VYBMLFqG3S35eluFt3PZ4qPo6KXN; notion_user_id=18005680-a694-4cdb-b90f-463c1fd41e67; notion_users=%5B%2218005680-a694-4cdb-b90f-463c1fd41e67%22%5D; intercom-session-gpfdrxfd=Y2c1a2JyVEcwUTB6aVdOelhuRGNjRXhJNmV3OUZsN0E1eEhJQXc1NmtxTDhpUHQzTkc2ZmxOU2lsWkRIeG90Ry0tUWxUTVBSaE55K1kvTmg0V1k5bk5tZz09--a17d491fa8da3e77d42c2208a1f270b1850df63a; __cf_bm=HsldtZgNRjdZwac97BA3dhiyFB837Ikg7VP5R4qs6go-1677174748-0-AV66cQfV+Bp0NS0q3dCWOVuAkkKeaFf/9dSzmu2O22OWMKg7HXd0k5K6G/a6uj0ySbYz3ViGNjBKURg7H4IvYJ8=; amp_af43d4=10778b68066e4a3ebe20699c69671a77.MTgwMDU2ODBhNjk0NGNkYmI5MGY0NjNjMWZkNDFlNjc=..1gpvk4eil.1gpvmfl2u.2bl.fa.2qv',
-    "dnt": "1",
-    "notion-audit-log-platform": "web",
-    "notion-client-version": "23.12.0.13",
-    "origin": "https://www.notion.so",
-    "referer": "https://www.notion.so/313372600/31b2b0d2ab124ac79615ab75dba30acf",
-    "sec-ch-ua": '"Chromium";v="110", "Not A(Brand";v="24", "Google Chrome";v="110"',
-    "sec-ch-ua-mobile": "?0",
-    "sec-ch-ua-platform": '"macOS"',
-    "sec-fetch-dest": "empty",
-    "sec-fetch-mode": "cors",
-    "sec-fetch-site": "same-origin",
-    "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36",
-    #'x-notion-active-user-header': '18005680-a694-4cdb-b90f-463c1fd41e67',
-}
 
 
-def notion_ai_chat(
-    system_prompt,
-    prompt,
-    content,
-    memory="",
-    cookies=None,
-    headers=headers,
-    space_id=None,
-):
-    """
-    This function helps write content to a document.
+def manage_memory(messages, max_tokens):
+    total_tokens = sum(len(message["content"]) for message in messages)
 
-    Parameters:
-    cookies (dict): Cookies to be used for the request.
-    headers (dict): Headers to be used for the request.
-    content (str): Content of the document to be written.
-    memory (str): Any previous content in the document.
-    id (str): ID of the document to which content is to be written.
+    while total_tokens > max_tokens:
+        # Remove the first message that is an answer
+        for i, message in enumerate(messages):
+            if message["role"] == "assistant":
+                total_tokens -= len(message["content"])
+                messages.pop(i)
+                break
 
-    Returns:
-    output (str): The content written to the document.
-    """
-
-    # Create the JSON data to be sent with the request.
-
-    json_data = {
-        "id": guid_generator(),
-        "context": {
-            "type": "helpMeEdit",
-            "pageTitle": system_prompt,
-            "pageContent": memory,
-            "selectedText": content,
-            "prompt": prompt,
-        },
-        "model": "openai-4",
-        "spaceId": "94a50b33-08d8-4280-9145-f72a9276df0f",
-        "isSpacePermission": False,
-        "aiSessionId": guid_generator(),
-        "metadata": {
-            "blockId": guid_generator(),
-        },
-    }
-
-    # Make the request and store the response
-    response = requests.post(
-        "https://www.notion.so/api/v3/getCompletion",
-        cookies=cookies,
-        headers=headers,
-        json=json_data,
-        verify=False,
-        timeout=TIMEOUT_SECONDS,
-    )
-    # Load the data from the response.
-    data = ndjson.loads(response.content.decode())
-    try:
-        # Join the lines of the output together.
-        output = "".join(f"{line['completion']}" for line in data)
-    except:
-        output = None
-    # Return the output.
-    return output
+    return messages
 
 
 def parse_token_error(error_msg):
@@ -131,10 +49,6 @@ def parse_token_error(error_msg):
     else:
         # Handle the case when the regex search doesn't find a match
         return None, None
-
-
-import os
-import json
 
 
 def truncate_messages(messages, model_name, system_prompt=None, max_tokens=None):
