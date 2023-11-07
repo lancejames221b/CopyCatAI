@@ -1,4 +1,3 @@
-
 import pyperclip
 import PySimpleGUI as sg
 import os
@@ -21,24 +20,26 @@ from splash import *
 home_dir = os.path.expanduser("~")
 bundle_dir = os.path.join(home_dir, "Library", "Application Support", "CopyCat")
 Path(bundle_dir).mkdir(parents=True, exist_ok=True)
+models_path = os.path.join(bundle_dir, "models.json")
+
 
 def is_tesseract_installed():
     try:
-        if platform.system() == 'Darwin':
+        if platform.system() == "Darwin":
             result = subprocess.run(
                 ["/opt/homebrew/bin/tesseract", "-v"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
             )
-        elif platform.system() == 'Linux':
+        elif platform.system() == "Linux":
             result = subprocess.run(
                 ["tesseract", "-v"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
             )
-        elif platform.system() == 'Windows':
+        elif platform.system() == "Windows":
             result = subprocess.run(
                 ["tesseract", "-v"],
                 stdout=subprocess.PIPE,
@@ -52,8 +53,9 @@ def is_tesseract_installed():
     except FileNotFoundError:
         return False
 
+
 def prompt_tesseract_installation():
-    if platform.system() == 'Darwin':
+    if platform.system() == "Darwin":
         message = """
             In order for the screenshot image to text feature to work, Tesseract must be installed.\n\n"
             Tesseract is not installed on your system. Please install it using the following command:\n\n"
@@ -62,7 +64,7 @@ def prompt_tesseract_installation():
             For more detailed installation instructions, visit:\n"
             https://formulae.brew.sh/formula/tesseract
         """
-    elif platform.system() == 'Linux':
+    elif platform.system() == "Linux":
         message = """
             In order for the screenshot image to text feature to work, Tesseract must be installed.\n\n"
             Tesseract is not installed on your system. Please install it using the following command:\n\n"
@@ -71,7 +73,7 @@ def prompt_tesseract_installation():
             For more detailed installation instructions, visit:\n"
             https://github.com/tesseract-ocr/tesseract/wiki
         """
-    elif platform.system() == 'Windows':
+    elif platform.system() == "Windows":
         message = """
             In order for the screenshot image to text feature to work, Tesseract must be installed.\n\n"
             Tesseract is not installed on your system. Please install it by following these steps:\n\n"
@@ -86,8 +88,10 @@ def prompt_tesseract_installation():
         return
     sg.popup(message, title="Screenshot Feature")
 
+
 if not is_tesseract_installed():
     prompt_tesseract_installation()
+
 
 def copy_files(filename, binary=False):
     if getattr(sys, "frozen", False):
@@ -110,6 +114,7 @@ def copy_files(filename, binary=False):
     os.chmod(destination_file, 0o600)
     print("created", destination_file)
 
+
 logo_path = os.path.join(bundle_dir, "logo.png")
 config_path = os.path.join(bundle_dir, "config.ini")
 memory_path = os.path.join(bundle_dir, "memory.json")
@@ -122,6 +127,7 @@ if not os.path.exists(logo_path):  # If the logo doesn't exist
 
 create_splash_screen()
 
+
 def if_first_time():
     if not os.path.exists(first_time):
         with open(first_time, "w") as f:
@@ -130,17 +136,21 @@ def if_first_time():
     else:
         return False
 
+
 def make_memory_file(filepath=memory_path):
     with open(filepath, "w") as f:
         json.dump({}, f, indent=4)
 
+
 if not os.path.exists(memory_path):
     make_memory_file()
+
 
 def load_config(filepath):
     config = configparser.ConfigParser(strict=False, interpolation=None)
     config.read(filepath)
     return config
+
 
 def save_config(filepath, config_dict):
     config = configparser.ConfigParser(strict=False, interpolation=None)
@@ -149,18 +159,27 @@ def save_config(filepath, config_dict):
     with open(filepath, "w") as config_file:
         config.write(config_file)
 
+
 def is_api_key_empty(api_key):
     return len(api_key.strip()) == 0
+
 
 def is_notion_token_empty(token, space_id):
     print("is_notion_token_empty")
     print(token, space_id)
     return len(token.strip()) == 0 or len(space_id.strip()) == 0
 
+
 CONFIG = load_config(config_path)
+
 
 def settings_window():
     global CONFIG
+    with open(models_path, "r") as f:
+        models = json.load(f)
+    model_info = ", ".join(
+        [f"{model}: {info['token_size']} max tokens" for model, info in models.items()]
+    )
 
     max_tokens = CONFIG.get("OpenAI", "max_tokens")
     if max_tokens == "0":
@@ -169,7 +188,13 @@ def settings_window():
         max_tokens = int(max_tokens)
 
     model = CONFIG.get("OpenAI", "model")
-    max_range = 32768 if model == "gpt-4-32k" else 8192 if model == "gpt-4" else 4096 if model == "gpt-3.5-turbo" else 16384 
+
+    if model in models:
+        max_range = models[model]["token_size"]
+    else:
+        raise ValueError(f"Invalid model name: {model}")
+
+    # Rest of the function remains the same...
 
     layout = [
         [
@@ -198,11 +223,9 @@ def settings_window():
             ),
         ],
         [
-            sg.Text(
-                f"Max Tokens (default None. 32k max for GPT-4-32k, 8k max for GPT-4, 4k max for GPT-3.5-turbo and 16k for GPT_3.5-turbo-16k):"
-            ),
+            sg.Text(f"Max Tokens (default None. {model_info}):"),
             sg.Slider(
-                range=(0, max_range),
+                range=(0, max([info["token_size"] for info in models.values()])),
                 default_value=max_tokens,
                 resolution=1,
                 orientation="h",
@@ -233,6 +256,7 @@ def settings_window():
 
     return
 
+
 PROMPT = False
 SKIP = False
 DEBUG = True
@@ -262,6 +286,7 @@ if if_first_time():
     )
     settings_window()
 
+
 def prompt_user(clip, img=False):
     global CONFIG
     global PROMPT
@@ -283,6 +308,8 @@ def prompt_user(clip, img=False):
     PROMPT = False
     SKIP = False
     DEBUG = True
+    with open(models_path, "r") as f:
+        models = json.load(f)
 
     include_urls = CONFIG.getboolean("GUI", "include_urls")
     mem_on_off = CONFIG.getboolean("GUI", "mem_on_off")
@@ -296,6 +323,10 @@ def prompt_user(clip, img=False):
     api_key = CONFIG.get("OpenAI", "api_key")
     temperature = CONFIG.get("OpenAI", "temperature")
     max_tokens = CONFIG.get("OpenAI", "max_tokens", fallback=None)
+    model_names = list(models.keys())
+    model_info = ", ".join(
+        [f"{model}: {info['token_size']} max tokens" for model, info in models.items()]
+    )
     if max_tokens == "0":
         max_tokens = None
     else:
@@ -346,8 +377,9 @@ def prompt_user(clip, img=False):
                     key="-ESCAPE-",
                 ),
                 sg.Text("Select Model:", tooltip="Select Model"),
+                sg.Text("Select Model:", tooltip="Select Model"),
                 sg.Combo(
-                    ["gpt-4-32k", "gpt-4", "gpt-3.5-turbo-16k", "gpt-3.5-turbo", "NotionAI"],
+                    model_names,
                     default_value=model,
                     readonly=True,
                     key="-MODEL-",
@@ -725,6 +757,7 @@ def prompt_user(clip, img=False):
             window.close()
             return
 
+
 def code_mode(reply):  # This function is used to format the reply in code mode
     if "```" not in reply:  # This if statement is used to format the reply in code mode
         return reply
@@ -748,6 +781,7 @@ def code_mode(reply):  # This function is used to format the reply in code mode
             )  # This if statement is used to format the reply in code mode
     return "\n".join(new_reply)
 
+
 def submit(
     input_text, clip, img, mem_on_off, topic, codemode, memory_path, config_path, window
 ):
@@ -756,11 +790,13 @@ def submit(
     mem = ""
     reply = ""
     new = False
-    if img and is_tesseract_installed():
+    if img:
         if os.path.exists("/tmp/copycat.jpg"):
             os.remove("/tmp/copycat.jpg")
         clip.save("/tmp/copycat.jpg")
-        clip = basic_text_extractor("/tmp/copycat.jpg")
+
+        clip = image_to_base64("/tmp/copycat.jpg")
+        clip = caption_image(clip)
     if isLink(clip.strip()) and include_urls:
         url = extracturl(clip.strip())
         if not isTwitterLink(url):

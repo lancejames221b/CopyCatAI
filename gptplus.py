@@ -5,7 +5,7 @@ from openai import APIError
 import configparser
 import re
 import ndjson  # Library used for working with newline-delimited JSON
-import requests 
+import requests
 from notification import *
 import tiktoken
 from requests.exceptions import RequestException, Timeout
@@ -15,6 +15,7 @@ import uuid
 def guid_generator():
     return str(uuid.uuid4())
 
+
 # Silence the warning
 from urllib3.exceptions import InsecureRequestWarning
 import datetime
@@ -23,7 +24,7 @@ TIMEOUT_SECONDS = 60
 
 home_dir = os.path.expanduser("~")
 bundle_dir = os.path.join(home_dir, "Library", "Application Support", "CopyCat")
-
+models_path = os.path.join(bundle_dir, "models.json")
 # Silence the warning
 requests.packages.urllib3.disable_warnings(
     InsecureRequestWarning
@@ -87,12 +88,12 @@ def notion_ai_chat(
             "selectedText": content,
             "prompt": prompt,
         },
-        'model': 'openai-4',
-        'spaceId': '94a50b33-08d8-4280-9145-f72a9276df0f',
-        'isSpacePermission': False,
-        'aiSessionId': guid_generator(),
-        'metadata': {
-            'blockId': guid_generator(),
+        "model": "openai-4",
+        "spaceId": "94a50b33-08d8-4280-9145-f72a9276df0f",
+        "isSpacePermission": False,
+        "aiSessionId": guid_generator(),
+        "metadata": {
+            "blockId": guid_generator(),
         },
     }
 
@@ -132,6 +133,10 @@ def parse_token_error(error_msg):
         return None, None
 
 
+import os
+import json
+
+
 def truncate_messages(messages, model_name, system_prompt=None, max_tokens=None):
     print("Truncating Memory...")
     adjusted_token_size = 0
@@ -139,28 +144,21 @@ def truncate_messages(messages, model_name, system_prompt=None, max_tokens=None)
     message_count = len(messages)
     encodingmodel = None
 
-    if model_name == "gpt-4":
+    with open(models_path, "r") as f:
+        models = json.load(f)
+
+    if model_name in models:
         if not max_tokens:
-            max_tokens = 8192
+            max_tokens = models[model_name]["token_size"]
         encodingmodel = model_name
-    elif model_name == "gpt-3.5-turbo":
-        if not max_tokens:
-            max_tokens = 4096
-        encodingmodel = model_name
-    elif model_name == "gpt-3.5-turbo-16k":
-        if not max_tokens:
-            max_tokens = 16384
-        encodingmodel = model_name
-    elif model_name == "gpt-4-32k":
-        if not max_tokens:
-            max_tokens = 32768
-        encodingmodel = "gpt-4"
     elif model_name == "NotionAI":
         return messages
     else:
         raise ValueError(f"Invalid model name: {model_name}")
 
     encoding = tiktoken.encoding_for_model(encodingmodel)
+
+    # Rest of the function remains the same...
 
     actual_tokens = len(encoding.encode(messages[-1]["content"]))
 
@@ -245,16 +243,14 @@ def truncate_messages(messages, model_name, system_prompt=None, max_tokens=None)
 
 
 def calculate_cost(prompt_tokens, completion_tokens, total_tokens, model=None):
-    
-    price_per_token = {
-        "gpt-3.5-turbo": (0.0015 / 1000, 0.002 / 1000),
-        "gpt-4": (0.03 / 1000, 0.06 / 1000),
-        "gpt-4-32k": (0.06 / 1000, 0.12 / 1000),
-        "gpt-3.5-turbo-16k": (0.003 / 1000, 0.004 / 1000)
-    }
-    
-    if model in price_per_token:
-        system_prompt_price_per_token, response_price_per_token = price_per_token[model]
+    with open(models_path, "r") as f:
+        models = json.load(f)
+
+    if model in models:
+        system_prompt_price_per_token = (
+            models[model]["input_price_per_1k_tokens"] / 1000
+        )
+        response_price_per_token = models[model]["output_price_per_1k_tokens"] / 1000
         total_price = (
             prompt_tokens * system_prompt_price_per_token
             + completion_tokens * response_price_per_token
@@ -383,7 +379,7 @@ class OpenAIMemory:
             except Timeout as e:
                 raise Exception(
                     "NotionAI took too long to respond. Try again later or use a different model."
-                )
+                ) from e
             except RequestException as e:
                 raise Exception(
                     "NotionAI returned an error. Try again later or use a different model."
@@ -475,7 +471,7 @@ class CostManager:
 
         with open(self.config_file, "w") as config_file:
             self.config.write(config_file)
-            
+
     def update_total_cost(self, cost):
         self.total_costs += cost
 
@@ -523,24 +519,21 @@ class CostManager:
             )
         else:
             memory_content = ""
-        if model != "NotionAI":
-            cost = calculate_cost(
-                prompt_tokens,
-                completion_tokens,
-                total_tokens,
-                model,
-            )
 
-            self.total_costs += cost
-            self.save_cost(cost, self.total_costs, total_tokens)
-            print("Cost:", cost)
-            print("Prompt tokens:", prompt_tokens)
-            print("Completion tokens:", completion_tokens)
-            print("Total tokens:", total_tokens)
-            print("Total Costs:", self.total_costs)
-        else:
-            total_tokens = 0
-            cost = 0
+        cost = calculate_cost(
+            prompt_tokens,
+            completion_tokens,
+            total_tokens,
+            model,
+        )
+
+        self.total_costs += cost
+        self.save_cost(cost, self.total_costs, total_tokens)
+        print("Cost:", cost)
+        print("Prompt tokens:", prompt_tokens)
+        print("Completion tokens:", completion_tokens)
+        print("Total tokens:", total_tokens)
+        print("Total Costs:", self.total_costs)
 
         return {
             "system_prompt": system_prompt,
