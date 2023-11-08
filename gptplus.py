@@ -291,7 +291,7 @@ class CostManager:
                 temperature=temperature,
             )
         except APIError as error:
-            print(f"OpenAI API Error: {error.message}")
+            print(f"OpenAI API Error: {str(error)}")
             response = ""
             prompt_tokens = 0
             completion_tokens = 0
