@@ -733,6 +733,16 @@ def code_mode(reply):  # This function is used to format the reply in code mode
     return "\n".join(new_reply)
 
 
+from PIL import Image
+
+
+def convert_rgba_to_rgb(image_path):
+    image = Image.open(image_path)
+    if image.mode == "RGBA":
+        rgb_image = image.convert("RGB")
+        rgb_image.save(image_path, "JPEG")
+
+
 def submit(
     input_text, clip, img, mem_on_off, topic, codemode, memory_path, config_path, window
 ):
@@ -742,11 +752,11 @@ def submit(
     reply = ""
     new = False
     if img:
-        if os.path.exists("/tmp/copycat.jpg"):
-            os.remove("/tmp/copycat.jpg")
-        clip.save("/tmp/copycat.jpg")
+        if os.path.exists("/tmp/copycat.png"):
+            os.remove("/tmp/copycat.png")
+        clip.save("/tmp/copycat.png")
 
-        clip = image_to_base64("/tmp/copycat.jpg")
+        clip = image_to_base64("/tmp/copycat.png")
         clip = caption_image(clip)
     if isLink(clip.strip()) and include_urls:
         url = extracturl(clip.strip())
@@ -869,6 +879,16 @@ def main(PROMPT, SKIP, prompt_user):
         try:
             pyperclip.determine_clipboard()
             clip = pyperclip.waitForNewPaste()
+            files = get_file_urls_from_pasteboard()
+            if files:
+                filelist = [f for f in files]
+                clip = read_file(filelist)
+                print(clip)
+
+                prompt_user(clip)
+                PROMPT = False
+                SKIP = False
+                continue  # Skip to the next iteration of the loop
             if clip == "" or clip == None and not PROMPT and not SKIP:  # IMAGE CHECK
                 image = ImageGrab.grabclipboard()
                 if isinstance(image, Image.Image):  # If the clipboard contains an image

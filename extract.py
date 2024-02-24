@@ -7,10 +7,53 @@ from PIL import ImageGrab, Image
 from bs4 import BeautifulSoup
 import openai
 
+from langchain_community.document_loaders import UnstructuredFileLoader
+import AppKit
+
+
+def get_file_urls_from_pasteboard():
+    pasteboard = AppKit.NSPasteboard.generalPasteboard()
+    # Check if the pasteboard contains file URLs
+    if AppKit.NSFilenamesPboardType in pasteboard.types():
+        # Extract the file URLs
+        return pasteboard.propertyListForType_(AppKit.NSFilenamesPboardType)
+    else:
+        return None
+
 
 def image_to_base64(image_path):
     with open(image_path, "rb") as image_file:
         return b64encode(image_file.read()).decode("utf-8")
+
+
+import os
+
+
+def read_file(filenames=None) -> str:
+    if isinstance(filenames, str):
+        # If a single filename is provided, convert it to a list
+        filenames = [filenames]
+
+    contents = []
+    for filename in filenames:
+        if os.path.isdir(filename):
+            # If the filename is a directory, recursively read all files in the directory
+            for dirpath, _, filenames in os.walk(filename):
+                for file in filenames:
+                    file_path = os.path.join(dirpath, file)
+                    loader = UnstructuredFileLoader(file_path)
+                    docs = loader.load_and_split()
+                    contents.extend(
+                        [f"{file_path}\n\n{chunk.page_content}" for chunk in docs]
+                    )
+        else:
+            # If the filename is a file, read the file
+            loader = UnstructuredFileLoader(filename)
+            docs = loader.load_and_split()
+            contents.extend([f"{filename}\n\n{chunk.page_content}" for chunk in docs])
+
+    # Join the list of strings into a single string
+    return "\n".join(contents)
 
 
 def caption_image(base64_image):
@@ -56,18 +99,17 @@ def caption_image(base64_image):
 
 
 def get_image_from_clipboard():
-    if os.path.exists("/tmp/copycat.jpg"):
-        os.remove("/tmp/copycat.jpg")
+    if os.path.exists("/tmp/copycat.png"):
+        os.remove("/tmp/copycat.png")
 
     img = ImageGrab.grabclipboard()
 
     # <PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=200x71 at 0x105E68700>
 
-    if not isinstance(img, Image.Image):
-        return False
-    else:
-        img.save("/tmp/copycat.jpg")
+    if isinstance(img, Image.Image):
+        img.save("/tmp/copycat.png")
         return True
+    return False
 
 
 # List of supported file formats
