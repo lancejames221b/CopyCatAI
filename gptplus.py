@@ -1,7 +1,7 @@
 import openai
 import json
 import os, json
-from openai import APIError, AsyncOpenAI
+from openai import APIError
 import configparser
 import re
 from notification import *

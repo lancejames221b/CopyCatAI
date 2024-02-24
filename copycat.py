@@ -874,6 +874,12 @@ def submit(
         return  # Return the input text
 
 
+import os
+
+
+from PIL import Image
+
+
 def main(PROMPT, SKIP, prompt_user):
     while True:
         try:
@@ -881,11 +887,14 @@ def main(PROMPT, SKIP, prompt_user):
             clip = pyperclip.waitForNewPaste()
             files = get_file_urls_from_pasteboard()
             if files:
-                filelist = [f for f in files]
-                clip = read_file(filelist)
-                print(clip)
-
-                prompt_user(clip)
+                for filename in files:
+                    _, ext = os.path.splitext(filename)
+                    if ext.lower() in [".jpg", ".jpeg", ".png", ".gif", ".webp"]:
+                        clip = Image.open(filename)
+                        prompt_user(clip, img=True)
+                    else:
+                        clip = read_file(filename)
+                        prompt_user(clip)
                 PROMPT = False
                 SKIP = False
                 continue  # Skip to the next iteration of the loop
