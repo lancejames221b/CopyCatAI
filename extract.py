@@ -8,23 +8,17 @@ from bs4 import BeautifulSoup
 import openai
 
 from langchain_community.document_loaders import UnstructuredFileLoader
-
 import platform
 
 
 def get_file_urls_from_pasteboard():
-    if platform.system() == "Darwin":  # macOS
-        import AppKit
-
-        pasteboard = AppKit.NSPasteboard.generalPasteboard()
-        # Check if the pasteboard contains file URLs
-        if AppKit.NSFilenamesPboardType in pasteboard.types():
-            # Extract the file URLs
-            return pasteboard.propertyListForType_(AppKit.NSFilenamesPboardType)
+    pasteboard = AppKit.NSPasteboard.generalPasteboard()
+    # Check if the pasteboard contains file URLs
+    if AppKit.NSFilenamesPboardType in pasteboard.types():
+        # Extract the file URLs
+        return pasteboard.propertyListForType_(AppKit.NSFilenamesPboardType)
     else:
-        # Code for other operating systems goes here
         return None
-    return None
 
 
 def image_to_base64(image_path):
@@ -42,38 +36,27 @@ def read_file(filenames=None) -> str:
 
     contents = []
     for filename in filenames:
-        try:
-            if os.path.isdir(filename):
-                # If the filename is a directory, recursively read all files in the directory
-                for dirpath, _, filenames in os.walk(filename):
-                    for file in filenames:
-                        try:
-                            file_path = os.path.join(dirpath, file)
-                            loader = UnstructuredFileLoader(file_path)
-                            docs = loader.load_and_split()
-                            contents.extend(
-                                [
-                                    f"{file_path}\n\n{chunk.page_content}"
-                                    for chunk in docs
-                                ]
-                            )
-                        except Exception:
-                            print(f"Error reading file {file_path}. Skipping.")
-            else:
-                # If the filename is a file, read the file
-                loader = UnstructuredFileLoader(filename)
-                docs = loader.load_and_split()
-                contents.extend(
-                    [f"{filename}\n\n{chunk.page_content}" for chunk in docs]
-                )
-        except Exception:
-            print(f"Error reading file {filename}. Skipping.")
+        if os.path.isdir(filename):
+            # If the filename is a directory, recursively read all files in the directory
+            for dirpath, _, filenames in os.walk(filename):
+                for file in filenames:
+                    file_path = os.path.join(dirpath, file)
+                    loader = UnstructuredFileLoader(file_path)
+                    docs = loader.load_and_split()
+                    contents.extend(
+                        [f"{file_path}\n\n{chunk.page_content}" for chunk in docs]
+                    )
+        else:
+            # If the filename is a file, read the file
+            loader = UnstructuredFileLoader(filename)
+            docs = loader.load_and_split()
+            contents.extend([f"{filename}\n\n{chunk.page_content}" for chunk in docs])
 
     # Join the list of strings into a single string
     return "\n".join(contents)
 
 
-def caption_image(base64_image, image_type="jpeg"):
+def caption_image(base64_image, image_type='jpeg'):
     """
     Generate a caption for an image using the OpenAI GPT-4 Vision model.
 

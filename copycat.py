@@ -995,6 +995,7 @@ def main(PROMPT, SKIP, prompt_user):
             pyperclip.determine_clipboard()
             clip = pyperclip.waitForNewPaste()
             files = get_file_urls_from_pasteboard()
+            print(files)
             if files:
                 for filename in files:
                     _, ext = os.path.splitext(filename)
@@ -1003,6 +1004,7 @@ def main(PROMPT, SKIP, prompt_user):
                         prompt_user(clip, img=True)
                     else:
                         clip = read_file(filename)
+                        print("Read File", clip)
                         prompt_user(clip)
                 PROMPT = False
                 SKIP = False
