@@ -62,21 +62,30 @@ class PromptManager:
             # Add a new prompt
             if event == "Add":
                 try:
-                    new_prompt_key = sg.popup_get_text(
-                        "Enter a new system prompt:",
-                        keep_on_top=True,
-                        size=(50, 10),
-                    )
-                    if new_prompt_key and new_prompt_key not in self.prompts:
-                        new_prompt_text = (
-                            ""  # Set the default prompt text to an empty string
-                        )
-                        self.prompts[new_prompt_key] = new_prompt_text
-                        self.save_prompts()
-                        sg.popup("Prompt added successfully!", keep_on_top=True)
-                        window.Element("-PROMPT-LIST-").Update(
-                            values=list(self.prompts.keys())
-                        )
+                    layout = [
+                        [sg.Text("Enter a new system prompt:")],
+                        [sg.Multiline(default_text="", size=(50, 10), key="-INPUT-")],
+                        [sg.Button("Submit"), sg.Button("Cancel")],
+                    ]
+                    popup_window = sg.Window("Add Prompt", layout)
+                    while True:
+                        event, values = popup_window.read()
+                        if event in (None, "Cancel"):
+                            break
+                        if event == "Submit":
+                            new_prompt_key = values["-INPUT-"]
+                            if new_prompt_key and new_prompt_key not in self.prompts:
+                                new_prompt_text = (
+                                    ""  # Set the default prompt text to an empty string
+                                )
+                                self.prompts[new_prompt_key] = new_prompt_text
+                                self.save_prompts()
+                                sg.popup("Prompt added successfully!", keep_on_top=True)
+                                window.Element("-PROMPT-LIST-").Update(
+                                    values=list(self.prompts.keys())
+                                )
+                            break
+                    popup_window.close()
                 except:
                     sg.popup(
                         "Error: Something went wrong with adding the prompt. Please try again.",
@@ -88,30 +97,38 @@ class PromptManager:
                 try:
                     prompt_key = values["-PROMPT-LIST-"][0]
                     prompt_text = self.prompts[prompt_key]
-                    new_prompt_text = sg.popup_get_text(
-                        "Edit Prompt",
-                        default_text=prompt_key,  # Set default_text to the selected prompt_key
-                        size=(
-                            50,
-                            10,
-                        ),  # Set the input box size to 50 columns and 2 rows
-                        keep_on_top=True,
-                    )
-                    if new_prompt_text:
-                        self.prompts[prompt_key] = new_prompt_text
-                        self.save_prompts()
-                        sg.popup("Prompt updated successfully!", keep_on_top=True)
-                        window.Element(
-                            "-PROMPT-LIST-"
-                        ).Update(  # Refresh the list of prompts
-                            values=list(self.prompts.keys())
-                        )
+                    layout = [
+                        [sg.Text("Edit Prompt")],
+                        [
+                            sg.Multiline(
+                                default_text=prompt_key, size=(50, 10), key="-INPUT-"
+                            )
+                        ],
+                        [sg.Button("Submit"), sg.Button("Cancel")],
+                    ]
+                    popup_window = sg.Window("Edit Prompt", layout)
+                    while True:
+                        event, values = popup_window.read()
+                        if event in (None, "Cancel"):
+                            break
+                        if event == "Submit":
+                            new_prompt_text = values["-INPUT-"]
+                            if new_prompt_text:
+                                self.prompts[prompt_key] = new_prompt_text
+                                self.save_prompts()
+                                sg.popup(
+                                    "Prompt updated successfully!", keep_on_top=True
+                                )
+                                window.Element("-PROMPT-LIST-").Update(
+                                    values=list(self.prompts.keys())
+                                )
+                            break
+                    popup_window.close()
                 except:
                     sg.popup(
                         "Error: Something went wrong with editing the prompt. Please try again.",
                         keep_on_top=True,
                     )
-
             # Delete a prompt
             if event == "Delete":
                 try:
