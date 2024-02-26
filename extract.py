@@ -10,13 +10,17 @@ import openai
 from langchain_community.document_loaders import UnstructuredFileLoader
 import platform
 
+if platform.system() == "Darwin":
+    import AppKit
+
 
 def get_file_urls_from_pasteboard():
-    pasteboard = AppKit.NSPasteboard.generalPasteboard()
-    # Check if the pasteboard contains file URLs
-    if AppKit.NSFilenamesPboardType in pasteboard.types():
-        # Extract the file URLs
-        return pasteboard.propertyListForType_(AppKit.NSFilenamesPboardType)
+    if platform.system() == "Darwin":
+        pasteboard = AppKit.NSPasteboard.generalPasteboard()
+        # Check if the pasteboard contains file URLs
+        if AppKit.NSFilenamesPboardType in pasteboard.types():
+            # Extract the file URLs
+            return pasteboard.propertyListForType_(AppKit.NSFilenamesPboardType)
     else:
         return None
 
@@ -56,7 +60,7 @@ def read_file(filenames=None) -> str:
     return "\n".join(contents)
 
 
-def caption_image(base64_image, image_type='jpeg'):
+def caption_image(base64_image, image_type="jpeg"):
     """
     Generate a caption for an image using the OpenAI GPT-4 Vision model.
 
