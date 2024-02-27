@@ -8,21 +8,23 @@ from bs4 import BeautifulSoup
 import openai
 
 from langchain_community.document_loaders import UnstructuredFileLoader
-import platform
 
-if platform.system() == "Darwin":
-    import AppKit
+import platform
 
 
 def get_file_urls_from_pasteboard():
-    if platform.system() == "Darwin":
+    if platform.system() == "Darwin":  # macOS
+        import AppKit
+
         pasteboard = AppKit.NSPasteboard.generalPasteboard()
         # Check if the pasteboard contains file URLs
         if AppKit.NSFilenamesPboardType in pasteboard.types():
             # Extract the file URLs
             return pasteboard.propertyListForType_(AppKit.NSFilenamesPboardType)
     else:
-        return None
+        # Code for other operating systems goes here
+        pass
+    return None
 
 
 def image_to_base64(image_path):

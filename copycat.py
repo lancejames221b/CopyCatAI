@@ -194,7 +194,7 @@ def settings_window(main_window=None):
 
 PROMPT = False
 SKIP = False
-DEBUG = True
+DEBUG = False
 TEST = False
 window_location = (None, None)
 include_urls = CONFIG.getboolean("GUI", "include_urls")
@@ -239,8 +239,6 @@ def prompt_user(clip, img=False):
     global api_key
     global include_urls
     global window_location
-    CHAT = False
-    PREVIEW = False
     CONFIG = load_config(config_path)
     PROMPT = False
     SKIP = False
@@ -355,15 +353,6 @@ def prompt_user(clip, img=False):
                                 default=False,
                                 key="-PREVIEW-",
                                 tooltip="Preview Mode",
-                                enable_events=True,
-                            ),
-                        ],
-                        [
-                            sg.Checkbox(
-                                "Chat Mode",
-                                default=False,
-                                key="-CHAT-",
-                                tooltip="Chat Mode",
                                 enable_events=True,
                             ),
                         ],
@@ -616,25 +605,11 @@ def prompt_user(clip, img=False):
             if event == "-PREVIEW-":
                 if values["-PREVIEW-"]:
                     window["-PREVIEW-ML-"].update(visible=values["-PREVIEW-"])
-                    PREVIEW = True
                 else:
                     print(values["-PREVIEW-"])
-                    PREVIEW = False
 
                     window["-PREVIEW-ML-"].update(visible=values["-PREVIEW-"])
 
-            if event == "-CHAT-":
-                if values["-CHAT-"]:
-                    window["-CHAT-"].update(visible=values["-CHAT-"])
-                    mem_on_off = True  # Set mem_on_off to True
-                    CHAT = True
-
-                    window["memory_on_off"].update(
-                        True
-                    )  # Check the "memory_on_off" checkbox
-                else:
-                    window["-CHAT-"].update(visible=values["-CHAT-"])
-                    CHAT = False
             elif event == "OK" or event == "-RETURN-":
                 if event == "-ESCAPE-":
                     window.refresh()
@@ -655,8 +630,7 @@ def prompt_user(clip, img=False):
                     # print("Input text is: ", input_text)
                     if values["topic"] != "":
                         TOPIC = values["topic"]
-                if not PREVIEW:
-                    print("PREVIEW is not visible", PREVIEW)
+                if not window["-PREVIEW-ML-"].visible:
                     window.close()
                 submit(
                     input_text,
@@ -668,8 +642,6 @@ def prompt_user(clip, img=False):
                     memory_path,
                     config_path,
                     window,
-                    CHAT,
-                    PREVIEW,
                 )
 
                 break
@@ -772,95 +744,13 @@ def convert_rgba_to_rgb(image_path):
 
 
 def submit(
-    input_text,
-    clip,
-    img,
-    mem_on_off,
-    topic,
-    codemode,
-    memory_path,
-    config_path,
-    window,
-    chat,
-    preview,
+    input_text, clip, img, mem_on_off, topic, codemode, memory_path, config_path, window
 ):
-
-    def chat_mode(response, cost_manager):  # Add cost_manager as a parameter
-
-        layout = [
-            [sg.Text("Welcome to Chat Mode!", font=("Helvetica", 14))],
-            [
-                sg.Multiline(
-                    size=(80, 20), disabled=True, autoscroll=True, key="-CHAT_HISTORY-"
-                )
-            ],
-            [
-                sg.Input(key="-INPUT-", size=(70, 1)),
-                sg.Button("Send", bind_return_key=True),
-            ],
-            [
-                sg.Button(
-                    "Copy Last AI Response", key="-COPY-"
-                ),  # This line is now on its own row
-            ],
-        ]
-
-        chat_window = sg.Window(
-            "Chat Mode",
-            layout,
-            finalize=True,
-            resizable=True,
-            keep_on_top=True,
-            location=(0, 0),
-        )
-        chat_window.bring_to_front()  # Bring the chat window to the front
-        chat_window.bind("<Escape>", "-ESCAPE-")
-
-        chat_window["-CHAT_HISTORY-"].print(response, text_color="blue")
-
-        while True:
-            event, values = chat_window.read()
-
-            if event == sg.WINDOW_CLOSED or event == "-ESCAPE-":  # Add this check
-                break
-
-            if event == "Send" and values["-INPUT-"].strip() != "":
-                user_input = values["-INPUT-"].strip()
-
-                chat_window["-CHAT_HISTORY-"].print(user_input, text_color="green")
-
-                # Call process_request on the CostManager instance
-                ai_response_dict = cost_manager.process_request(
-                    topic,
-                    user_input,
-                    model,
-                    use_memory=mem_on_off,
-                    tokens=max_tokens,
-                    temperature=float(temperature),
-                )
-                ai_response = ai_response_dict["response"]  # Extract the AI's response
-
-                chat_window["-CHAT_HISTORY-"].print(ai_response, text_color="blue")
-
-                pyperclip.copy(ai_response)  # Copy the AI's response to the clipboard
-
-                chat_window["-INPUT-"].update(
-                    ""
-                )  # Clear input field after sending a message
-
-            if event == "-COPY-":  # Add this check
-                pyperclip.copy(
-                    ai_response
-                )  # Copy the last AI's response to the clipboard
-
-        chat_window.close()
-
-    print("Chat: ", chat)
-    print("Preview: ", preview)
-    if not chat and not preview:
-        print("Closing window")
+    if not window["-PREVIEW-ML-"].visible:
         window.close()
+    mem = ""
     reply = ""
+    new = False
     if img:
         if os.path.exists("/tmp/copycat.png"):
             os.remove("/tmp/copycat.png")
@@ -948,19 +838,14 @@ def submit(
     if DEBUG:
         print("Reply", reply["response"])
     if reply["response"].strip():  # If the reply is not empty
-        if preview:
-            print("Preview Successfully")
+        if window["-PREVIEW-ML-"].visible:
             window["-PREVIEW-ML-"].update(reply["response"])
-        if chat:
-            print("Chat Successfully")
-            chat_mode(reply["response"], cost_manager)
-
         pyperclip.determine_clipboard()  # Determine the clipboard
-        pyperclip.copy(reply["response"])
+        pyperclip.copy(reply["response"])  # Copy the reply to the clipboard
+
         if not pyperclip.paste():  # If the clipboard is empty
             pyperclip.determine_clipboard()
             pyperclip.copy(reply["response"])  #
-
         display_notification(  # Display a notification
             "Copied to Clipboard!",  # Title
             "Your AI Request Has Completed Successfully!",  # Message
@@ -989,13 +874,18 @@ def submit(
         return  # Return the input text
 
 
+import os
+
+
+from PIL import Image
+
+
 def main(PROMPT, SKIP, prompt_user):
     while True:
         try:
             pyperclip.determine_clipboard()
             clip = pyperclip.waitForNewPaste()
             files = get_file_urls_from_pasteboard()
-            print(files)
             if files:
                 for filename in files:
                     _, ext = os.path.splitext(filename)
@@ -1004,7 +894,6 @@ def main(PROMPT, SKIP, prompt_user):
                         prompt_user(clip, img=True)
                     else:
                         clip = read_file(filename)
-                        print("Read File", clip)
                         prompt_user(clip)
                 PROMPT = False
                 SKIP = False

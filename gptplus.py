@@ -29,13 +29,17 @@ def manage_memory(messages, model_name, max_tokens=None):
             raise ValueError(f"Invalid model name: {model_name}")
 
         if not max_tokens:
-            max_tokens = models[model_name]["token_size"] * 0.95  # 95% of the maximum
+            max_tokens = int(
+                models[model_name]["token_size"] * 0.95
+            )  # 95% of the maximum
 
     # Ensure no single message exceeds max_tokens
     for i, message in enumerate(messages):
         if len(message["content"]) > max_tokens:
             # Truncate the message
             messages[i]["content"] = message["content"][:max_tokens]
+
+    # ... rest of your code ...
 
     total_tokens = sum(len(message["content"]) for message in messages)
 
