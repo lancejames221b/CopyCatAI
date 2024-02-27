@@ -1,7 +1,4 @@
 import openai
-from openai import OpenAI
-
-client = OpenAI()
 import json
 import os, json
 from openai import APIError
@@ -32,17 +29,13 @@ def manage_memory(messages, model_name, max_tokens=None):
             raise ValueError(f"Invalid model name: {model_name}")
 
         if not max_tokens:
-            max_tokens = int(
-                models[model_name]["token_size"] * 0.95
-            )  # 95% of the maximum
+            max_tokens = models[model_name]["token_size"] * 0.95  # 95% of the maximum
 
     # Ensure no single message exceeds max_tokens
     for i, message in enumerate(messages):
         if len(message["content"]) > max_tokens:
             # Truncate the message
             messages[i]["content"] = message["content"][:max_tokens]
-
-    # ... rest of your code ...
 
     total_tokens = sum(len(message["content"]) for message in messages)
 
@@ -187,20 +180,26 @@ class OpenAIMemory:
         messages.append({"role": "user", "content": prompt})
 
         try:
-            response = client.chat.completions.create(model=model,
-            messages=messages,
-            max_tokens=tokens,
-            n=1,
-            stop=None,
-            temperature=temperature,
-            stream=False)
-        except openai.InvalidRequestError as error:
+            response = openai.ChatCompletion.create(
+                model=model,
+                messages=messages,
+                max_tokens=tokens,
+                n=1,
+                stop=None,
+                temperature=temperature,
+                stream=False,
+            )
+        except openai.error.InvalidRequestError as error:
             raise Exception(error)
 
-        ai_response = response.choices[0].message.content.strip()
+        ai_response = response["choices"][0]["message"]["content"].strip()
         # Update the token counts here
-        self.prompt_tokens += response.usage.prompt_tokens  # Update with actual prompt token count
-        self.completion_tokens += response.usage.completion_tokens  # Update with actual completion token count
+        self.prompt_tokens += response["usage"][
+            "prompt_tokens"
+        ]  # Update with actual prompt token count
+        self.completion_tokens += response["usage"][
+            "completion_tokens"
+        ]  # Update with actual completion token count
         self.total_tokens += (
             self.prompt_tokens + self.completion_tokens
         )  # Update total tokens
