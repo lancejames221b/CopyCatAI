@@ -5,9 +5,7 @@ from PIL import Image
 from base64 import b64decode, b64encode
 from PIL import ImageGrab, Image
 from bs4 import BeautifulSoup
-from openai import OpenAI
-
-client = OpenAI()
+import openai
 
 from langchain_community.document_loaders import UnstructuredFileLoader
 
@@ -93,11 +91,13 @@ def caption_image(base64_image, image_type="jpeg"):
         },
     ]
     # Make the API call using the gpt-4-vision-preview model
-    response = client.chat.completions.create(model="gpt-4-vision-preview",
-    messages=messages,
-    max_tokens=100)
+    response = openai.ChatCompletion.create(
+        model="gpt-4-vision-preview",
+        messages=messages,
+        max_tokens=100,  # Adjust max_tokens if needed
+    )
 
-    return response.choices[0].message.content.strip()
+    return response.choices[0].message["content"].strip()
 
 
 # Example usage:
