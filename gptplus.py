@@ -1,4 +1,7 @@
 import openai
+from openai import OpenAI
+
+client = OpenAI()
 import json
 import os, json
 from openai import APIError
@@ -184,26 +187,20 @@ class OpenAIMemory:
         messages.append({"role": "user", "content": prompt})
 
         try:
-            response = openai.ChatCompletion.create(
-                model=model,
-                messages=messages,
-                max_tokens=tokens,
-                n=1,
-                stop=None,
-                temperature=temperature,
-                stream=False,
-            )
-        except openai.error.InvalidRequestError as error:
+            response = client.chat.completions.create(model=model,
+            messages=messages,
+            max_tokens=tokens,
+            n=1,
+            stop=None,
+            temperature=temperature,
+            stream=False)
+        except openai.InvalidRequestError as error:
             raise Exception(error)
 
-        ai_response = response["choices"][0]["message"]["content"].strip()
+        ai_response = response.choices[0].message.content.strip()
         # Update the token counts here
-        self.prompt_tokens += response["usage"][
-            "prompt_tokens"
-        ]  # Update with actual prompt token count
-        self.completion_tokens += response["usage"][
-            "completion_tokens"
-        ]  # Update with actual completion token count
+        self.prompt_tokens += response.usage.prompt_tokens  # Update with actual prompt token count
+        self.completion_tokens += response.usage.completion_tokens  # Update with actual completion token count
         self.total_tokens += (
             self.prompt_tokens + self.completion_tokens
         )  # Update total tokens

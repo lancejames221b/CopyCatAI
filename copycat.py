@@ -213,7 +213,6 @@ if max_tokens == "None":
     max_tokens = None
 else:
     max_tokens = int(max_tokens)
-openai.api_key = api_key
 
 if if_first_time():
     webbrowser.open_new_tab(
@@ -266,13 +265,11 @@ def prompt_user(clip, img=False):
         max_tokens = None
     else:
         max_tokens = int(max_tokens)
-    openai.api_key = api_key
     if is_api_key_empty(api_key) and is_notion_token_empty(
         CONFIG.get("NotionAI", "token_v2"), CONFIG.get("NotionAI", "space_id")
     ):
         settings_window()
         api_key = CONFIG.get("OpenAI", "api_key")
-        openai.api_key = api_key
 
     openai_memory = OpenAIMemory(memory_path, config_path)
     input_text = ""
@@ -499,7 +496,6 @@ def prompt_user(clip, img=False):
                     max_tokens = None
                 else:
                     max_tokens = int(max_tokens)
-                openai.api_key = CONFIG.get("OpenAI", "api_key")
                 window["temperature"].update(temperature)
                 window["total_tokens"].update(max_tokens)
                 window.refresh()
@@ -806,7 +802,7 @@ def submit(
             tokens=max_tokens,
             temperature=float(temperature),
         )
-    except openai.error.AuthenticationError as error:
+    except openai.AuthenticationError as error:
         print(error)
         display_notification(
             "Go To Settings-Preferences->OpenAI API Key",
