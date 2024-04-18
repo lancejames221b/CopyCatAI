@@ -9,7 +9,7 @@
     "input_price_per_1k_tokens": 0.01,
     "output_price_per_1k_tokens": 0.03
   },
-  "gpt-4-turbo-preview": {
+  "gpt-4-turbo": {
     "token_size": 128000,
     "input_price_per_1k_tokens": 0.01,
     "output_price_per_1k_tokens": 0.03
