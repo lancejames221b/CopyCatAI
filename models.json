@@ -1,10 +1,5 @@
 {
   "gpt-3.5-turbo": {
-    "token_size": 4096,
-    "input_price_per_1k_tokens": 0.003,
-    "output_price_per_1k_tokens": 0.006
-  },
-  "gpt-3.5-turbo-16k": {
     "token_size": 16384,
     "input_price_per_1k_tokens": 0.001,
     "output_price_per_1k_tokens": 0.002
@@ -14,9 +9,14 @@
     "input_price_per_1k_tokens": 0.01,
     "output_price_per_1k_tokens": 0.03
   },
-  "gpt-4-1106-preview": {
+  "gpt-4-turbo": {
     "token_size": 128000,
     "input_price_per_1k_tokens": 0.01,
     "output_price_per_1k_tokens": 0.03
+  },
+  "gpt-4o": {
+    "token_size": 128000,
+    "input_price_per_1k_tokens": 0.005,
+    "output_price_per_1k_tokens": 0.015
   }
 }
