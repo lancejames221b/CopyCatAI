@@ -42,7 +42,7 @@ def caption_image(base64_image):
     ]
     # Make the API call using the gpt-4-vision-preview model
     response = openai.ChatCompletion.create(
-        model="gpt-4-vision-preview",
+        model="gpt-4o",
         messages=messages,
         max_tokens=100,  # Adjust max_tokens if needed
     )
