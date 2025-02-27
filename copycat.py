@@ -615,7 +615,9 @@ def prompt_user(clip, img=False):
                     window.refresh()
                     break
                 model = values["-MODEL-"]
-                CONFIG["OpenAI"]["model"] = model
+                provider = provider_models.get(model, "openai")
+                CONFIG[provider]["model"] = model
+                CONFIG["GUI"]["provider"] = provider
 
                 # window["-MODEL-"].update(values["-MODEL-"])
                 include_urls = values["-URLS-"]

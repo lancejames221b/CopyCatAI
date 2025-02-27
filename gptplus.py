@@ -290,8 +290,8 @@ class CostManager:
                 tokens=tokens,
                 temperature=temperature,
             )
-        except APIError as error:
-            print(f"OpenAI API Error: {str(error)}")
+        except Exception as error:
+            print(f"API Error: {str(error)}")
             response = ""
             prompt_tokens = 0
             completion_tokens = 0

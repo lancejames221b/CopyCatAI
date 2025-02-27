@@ -1,22 +1,62 @@
 {
   "gpt-3.5-turbo": {
     "token_size": 16384,
-    "input_price_per_1k_tokens": 0.001,
-    "output_price_per_1k_tokens": 0.002
+    "input_price_per_1k_tokens": 0.0005,
+    "output_price_per_1k_tokens": 0.0015,
+    "provider": "openai"
   },
   "gpt-4": {
     "token_size": 8192,
     "input_price_per_1k_tokens": 0.01,
-    "output_price_per_1k_tokens": 0.03
+    "output_price_per_1k_tokens": 0.03,
+    "provider": "openai"
   },
   "gpt-4-turbo": {
     "token_size": 128000,
     "input_price_per_1k_tokens": 0.01,
-    "output_price_per_1k_tokens": 0.03
+    "output_price_per_1k_tokens": 0.03,
+    "provider": "openai"
   },
   "gpt-4o": {
     "token_size": 128000,
     "input_price_per_1k_tokens": 0.005,
-    "output_price_per_1k_tokens": 0.015
+    "output_price_per_1k_tokens": 0.015,
+    "provider": "openai"
+  },
+  "gpt-4o-mini": {
+    "token_size": 128000,
+    "input_price_per_1k_tokens": 0.0015,
+    "output_price_per_1k_tokens": 0.006,
+    "provider": "openai"
+  },
+  "claude-3-opus-20240229": {
+    "token_size": 200000,
+    "input_price_per_1k_tokens": 0.015,
+    "output_price_per_1k_tokens": 0.075,
+    "provider": "anthropic"
+  },
+  "claude-3-sonnet-20240229": {
+    "token_size": 200000,
+    "input_price_per_1k_tokens": 0.003,
+    "output_price_per_1k_tokens": 0.015,
+    "provider": "anthropic"
+  },
+  "claude-3-haiku-20240307": {
+    "token_size": 200000,
+    "input_price_per_1k_tokens": 0.00025,
+    "output_price_per_1k_tokens": 0.00125,
+    "provider": "anthropic"
+  },
+  "gemini-pro": {
+    "token_size": 32768,
+    "input_price_per_1k_tokens": 0.00025,
+    "output_price_per_1k_tokens": 0.0005,
+    "provider": "google"
+  },
+  "gemini-ultra": {
+    "token_size": 32768,
+    "input_price_per_1k_tokens": 0.00125,
+    "output_price_per_1k_tokens": 0.00375,
+    "provider": "google"
   }
 }
